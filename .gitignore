@@ -1,0 +1,11 @@
+.vscode
+*.exe
+.DS_store
+main.out*
+main
+/gcc_*
+/clang_*
+build
+*.code-workspace
+vgcore.*
+
