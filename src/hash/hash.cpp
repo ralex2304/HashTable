@@ -1,11 +1,11 @@
 #include "hash.h"
 
 inline static Hash_t ror_(Hash_t x, unsigned char shift) {
-    return (unsigned char)((x >> shift) + (x << (sizeof(Hash_t) - shift)));
+    return (x >> shift) + (x << (sizeof(Hash_t) * 8 - shift));
 }
 
 inline static Hash_t rol_(Hash_t x, unsigned char shift) {
-    return (unsigned char)((x << shift) + (x >> (sizeof(Hash_t) - shift)));
+    return (x << shift) + (x >> (sizeof(Hash_t) * 8 - shift));
 }
 
 

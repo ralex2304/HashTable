@@ -7,6 +7,8 @@
 
 #include "List/list.h"
 
+#include "hash/crc.h"
+
 struct HashTable {
     public:
 
@@ -21,12 +23,35 @@ struct HashTable {
         void dtor();
 
         inline Elem_t* get_elem_by_key(Key_t key) {
-            return get_elem_by_key(key, calc_hash_(key));
+            return get_elem_by_key(key, calc_hash(key));
         };
 
         Elem_t* get_elem_by_key(Key_t key, Hash_t hash);
 
-        inline int insert_elem(Elem_t elem);
+        inline int insert_elem(Elem_t elem) {
+            size_t inserted_index = 0;
+            return list_pushback(table_ + (elem.hash % table_size_), elem, &inserted_index);
+        };
+
+        inline int insert(Key_t key, Val_t val) {
+            Elem_t elem = {.key = key, .val = val, .hash = calc_hash(key)};
+            return insert_elem(elem);
+        };
+
+#ifdef HASHES_TEST
+        inline Hash_t calc_hash(Key_t key) { return hash_func_(key); };
+#endif
+#ifdef PERF_TEST
+        inline Hash_t calc_hash(Key_t key) { return strcrc(key); };
+#endif
+
+        inline size_t size() { return table_size_; };
+
+        inline List* get_list_by_index(size_t index) {
+            assert(index < table_size_);
+
+            return table_ + index;
+        };
 
     private:
 
@@ -34,10 +59,8 @@ struct HashTable {
 
         List* table_ = nullptr;
 
-        inline Hash_t calc_hash_(Key_t key);
-
 #ifdef HASHES_TEST
-        Hash_t (*hash_func_)(Key_t);
+        Hash_t (*hash_func_)(Key_t) = nullptr;
 #endif
 };
 

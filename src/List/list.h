@@ -210,14 +210,6 @@ inline int list_pushfront(List* list, const Elem_t elem, size_t* inserted_index)
 int list_delete(List* list, const size_t position, const bool no_resize = false);
 
 /**
- * @brief (Use macros LIST_VERIFY) Verifies list data and fields
- *
- * @param list
- * @return int
- */
-int list_verify(const List* list);
-
-/**
  * @brief Resizes list (realloc)
  *
  * @param list
@@ -354,6 +346,14 @@ void list_print_error(const int err_code);
      * @param list
      */
     #define LIST_DUMP(list) list_dump(list, VAR_CODE_DATA())
+
+    /**
+    * @brief (Use macros LIST_VERIFY) Verifies list data and fields
+    *
+    * @param list
+    * @return int
+    */
+    int list_verify(const List* list);
 
 #else //< #ifdef NDEBUG
 

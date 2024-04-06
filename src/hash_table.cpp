@@ -14,12 +14,15 @@ bool HashTable::ctor(size_t size) {
     if (table_ == nullptr)
         return false;
 
-    for (size_t i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++) {
+        table_[i] = {};
+
         if (LIST_CTOR_CAP(table_ + i, LIST_DEFAULT_CAPACITY) != List::OK) {
 
             FREE(table_);
             return false;
         }
+    }
 
     table_size_ = size;
 
@@ -53,22 +56,4 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
     }
 
     return nullptr;
-}
-
-inline int HashTable::insert_elem(Elem_t elem) {
-    size_t inserted_index = 0;
-
-    return list_pushback(table_ + (elem.hash % table_size_), elem, &inserted_index);
-}
-
-inline Hash_t HashTable::calc_hash_(Key_t key) {
-
-#ifdef HASHES_TEST
-    return hash_func_(key);
-#endif
-
-#ifdef PERF_TEST
-    return strcrc(key);
-#endif
-
 }

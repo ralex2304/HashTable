@@ -181,60 +181,6 @@ int list_logical_index_by_physical(const List* list, const ssize_t physical_i, s
     return res;
 }
 
-#define CHECK_ERR_(clause, err) if (clause) res |= err
-
-int list_verify(const List* list) {
-    assert(list);
-
-    int res = list->OK;
-
-    CHECK_AND_RETURN(!list_is_initialised(list), list->UNITIALISED);
-
-    bool is_data_valid = true;
-
-    if (!is_ptr_valid(list->arr)) {
-        res |= list->DATA_INVALID_PTR;
-        is_data_valid = false;
-    }
-
-    CHECK_ERR_(list->capacity < list->size + 1, list->LOW_CAPACITY);
-    CHECK_ERR_(list->capacity < 0, list->NEGATIVE_CAPACITY);
-    CHECK_ERR_(list->size < 0, list->NEGATIVE_SIZE);
-    CHECK_ERR_(list->free_head <= 0, list->INVALID_FREE_HEAD);
-
-    if (!is_data_valid)
-        return res;
-
-    CHECK_ERR_(list_tail(list) < 0, list->INVALID_TAIL);
-    CHECK_ERR_(list_head(list) < 0, list->INVALID_HEAD);
-
-    ssize_t prev_phys_i = 0;
-
-    ssize_t phys_i = list_head(list);
-    ssize_t log_i = 0;
-    LIST_FOREACH(*list, phys_i, log_i) {
-        CHECK_ERR_(Elem_t_is_poison(list->arr[phys_i].elem), list->POISON_VAL_FOUND);
-        CHECK_ERR_(list->arr[phys_i].prev != prev_phys_i, list->DAMAGED_PATH);
-
-        CHECK_ERR_(list->is_linear && phys_i != log_i + 1, list->INVALID_IS_LINEAR);
-
-        prev_phys_i = phys_i;
-    }
-
-    CHECK_ERR_(log_i != list->size, list->DAMAGED_PATH);
-    CHECK_ERR_(phys_i < 0, list->DAMAGED_PATH);
-
-    for (phys_i = 1; phys_i < list->capacity; phys_i++) {
-        CHECK_ERR_(list->arr[phys_i].prev != -1 && Elem_t_is_poison(list->arr[phys_i].elem),
-                                                                        list->POISON_VAL_FOUND);
-        CHECK_ERR_(list->arr[phys_i].prev == -1 && !Elem_t_is_poison(list->arr[phys_i].elem),
-                                                                        list->NON_POISON_EMPTY);
-    }
-
-    return res;
-}
-#undef CHECK_ERR_
-
 int list_insert_after(List* list, const size_t position, const Elem_t elem, size_t* inserted_index) {
     int res = LIST_ASSERT(list);
 
@@ -292,6 +238,60 @@ int list_delete(List* list, const size_t position, const bool no_resize) {
 }
 
 #ifndef NDEBUG
+
+#define CHECK_ERR_(clause, err) if (clause) res |= err
+
+int list_verify(const List* list) {
+    assert(list);
+
+    int res = list->OK;
+
+    CHECK_AND_RETURN(!list_is_initialised(list), list->UNITIALISED);
+
+    bool is_data_valid = true;
+
+    if (!is_ptr_valid(list->arr)) {
+        res |= list->DATA_INVALID_PTR;
+        is_data_valid = false;
+    }
+
+    CHECK_ERR_(list->capacity < list->size + 1, list->LOW_CAPACITY);
+    CHECK_ERR_(list->capacity < 0, list->NEGATIVE_CAPACITY);
+    CHECK_ERR_(list->size < 0, list->NEGATIVE_SIZE);
+    CHECK_ERR_(list->free_head <= 0, list->INVALID_FREE_HEAD);
+
+    if (!is_data_valid)
+        return res;
+
+    CHECK_ERR_(list_tail(list) < 0, list->INVALID_TAIL);
+    CHECK_ERR_(list_head(list) < 0, list->INVALID_HEAD);
+
+    ssize_t prev_phys_i = 0;
+
+    ssize_t phys_i = list_head(list);
+    ssize_t log_i = 0;
+    LIST_FOREACH(*list, phys_i, log_i) {
+        CHECK_ERR_(Elem_t_is_poison(list->arr[phys_i].elem), list->POISON_VAL_FOUND);
+        CHECK_ERR_(list->arr[phys_i].prev != prev_phys_i, list->DAMAGED_PATH);
+
+        CHECK_ERR_(list->is_linear && phys_i != log_i + 1, list->INVALID_IS_LINEAR);
+
+        prev_phys_i = phys_i;
+    }
+
+    CHECK_ERR_(log_i != list->size, list->DAMAGED_PATH);
+    CHECK_ERR_(phys_i < 0, list->DAMAGED_PATH);
+
+    for (phys_i = 1; phys_i < list->capacity; phys_i++) {
+        CHECK_ERR_(list->arr[phys_i].prev != -1 && Elem_t_is_poison(list->arr[phys_i].elem),
+                                                                        list->POISON_VAL_FOUND);
+        CHECK_ERR_(list->arr[phys_i].prev == -1 && !Elem_t_is_poison(list->arr[phys_i].elem),
+                                                                        list->NON_POISON_EMPTY);
+    }
+
+    return res;
+}
+#undef CHECK_ERR_
 
 int list_ctor_debug(List* list, const VarCodeData var_data, size_t init_capacity) {
     assert(list);
