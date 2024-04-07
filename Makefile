@@ -36,13 +36,16 @@ NESTED_CODE_DIRS = $(NESTED_CODE_DIRS_CD:.%=%)
 
 
 FILES_FULL = $(shell find ./$(SRC_DIR) -name "*.cpp")
+ASM_FILES_FULL = $(shell find ./$(SRC_DIR) -name "*.nasm")
 
 FILES = $(FILES_FULL:.%=%)
+ASM_FILES = $(ASM_FILES_FULL:.%=%)
 
 MAKE_DIRS = $(NESTED_CODE_DIRS:%=$(BUILD_DIR)%)
 OBJ = $(FILES:%=$(BUILD_DIR)%)
+ASM_OBJ = $(ASM_FILES:%=$(BUILD_DIR)%)
 DEPENDS = $(OBJ:%.cpp=%.d)
-OBJECTS = $(OBJ:%.cpp=%.o)
+OBJECTS = $(OBJ:%.cpp=%.o) $(ASM_OBJ:%.nasm=%.o)
 
 target: $(TARGET)
 
@@ -59,6 +62,14 @@ $(MAKE_DIRS): | $(BUILD_DIR)
 
 $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR) $(MAKE_DIRS)
 	@$(CC) $(OPTIMISATION) $(IFLAGS) $(CFLAGS) $(if $(sanitizer), $(CFLAGS_SANITIZER)) -MMD -MP -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.nasm | $(BUILD_DIR) $(MAKE_DIRS)
+	@nasm -f elf64 $< -o $@
+
+.PHONY: callgrind
+
+callgrind:
+	valgrind --dump-instr=yes --collect-jumps=yes --tool=callgrind $(prog)
 
 clean:
 	@rm -rf ./$(BUILD_DIR)/*

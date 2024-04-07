@@ -29,7 +29,8 @@ int main() {
     char* words = nullptr;
 
     long size = 0;
-    STATUS_CHECK_RAISE(file_open_read_close("test/test_input/words.txt", &words, &size, 1),
+    STATUS_CHECK_RAISE(file_open_read_close("test/test_input/words.txt", &words, &size, 1 + 32),
+                                                                                         // 32 for AVX
                                                                                     FREE(words));
 
 #ifdef HASHES_TEST
@@ -52,11 +53,9 @@ inline static bool insert_word_(HashTable* table, Key_t word) {
 
     if (elem == nullptr) {
 
-        if (table->insert(word, 1) != List::OK)
+        if (table->insert(word, strlen(word)) != List::OK)
             return false;
 
-    } else {
-        elem->val++;
     }
 
     return true;
@@ -117,7 +116,7 @@ static Status::Statuses hashes_test_print_results_(HashTable* tables) {
 
     return Status::NORMAL_WORK;
 }
-#endif
+#endif //< #ifdef HASHES_TEST
 
 #ifdef PERF_TEST
 static Status::Statuses perf_test_read_keys_and_search_(HashTable* table) {
@@ -126,7 +125,7 @@ static Status::Statuses perf_test_read_keys_and_search_(HashTable* table) {
     char* keys = nullptr;
 
     long size = 0;
-    STATUS_CHECK(file_open_read_close("test/test_input/keys.txt", &keys, &size, 1));
+    STATUS_CHECK(file_open_read_close("test/test_input/keys.txt", &keys, &size, 1 + 32)); //< 32 for AVX
 
     char* key = strtok(keys, "\n");
 
@@ -134,13 +133,10 @@ static Status::Statuses perf_test_read_keys_and_search_(HashTable* table) {
 
     while (key != nullptr && *key != '\0') {
 
-        for (size_t i = 0; i < HASHES_TEST_NUM; i++) {
+        Elem_t* elem = table->get_elem_by_key(key);
 
-            Elem_t* elem = table->get_elem_by_key(key);
-
-            if (elem != nullptr)
-                found++;
-        }
+        if (elem != nullptr)
+            found++;
 
         key = strtok(nullptr, "\n");
     }
@@ -180,4 +176,4 @@ static Status::Statuses perf_test_(char* words) {
 
     return result;
 }
-#endif
+#endif //< #ifdef PERF_TEST

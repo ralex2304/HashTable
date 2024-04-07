@@ -4,10 +4,12 @@
 #include <assert.h>
 
 #include "config.h"
-
 #include "List/list.h"
-
 #include "hash/crc.h"
+
+#if defined CRC_OPTIMISATION || defined STRCMP_OPTIMISATION
+#include <immintrin.h>
+#endif
 
 struct HashTable {
     public:
@@ -22,9 +24,9 @@ struct HashTable {
 
         void dtor();
 
-        inline Elem_t* get_elem_by_key(Key_t key) {
+        Elem_t* get_elem_by_key(Key_t key) {
             return get_elem_by_key(key, calc_hash(key));
-        };
+        }
 
         Elem_t* get_elem_by_key(Key_t key, Hash_t hash);
 
@@ -42,8 +44,14 @@ struct HashTable {
         inline Hash_t calc_hash(Key_t key) { return hash_func_(key); };
 #endif
 #ifdef PERF_TEST
+
+#ifndef CRC_OPTIMISATION
         inline Hash_t calc_hash(Key_t key) { return strcrc(key); };
-#endif
+#else //< #ifdef CRC_OPTIMISATION
+        inline Hash_t calc_hash(Key_t key) { return asm_calc_crc32(key); };
+#endif //< #ifndef CRC_OPTIMISATION
+
+#endif //< #ifdef PERF_TEST
 
         inline size_t size() { return table_size_; };
 

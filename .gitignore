@@ -2,7 +2,7 @@
 *.exe
 .DS_store
 main.out*
-main
+/main*
 /gcc_*
 /clang_*
 build

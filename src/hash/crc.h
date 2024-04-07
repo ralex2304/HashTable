@@ -13,4 +13,6 @@ inline uint32_t memcrc(const char* data, size_t size) {
 
 uint32_t strcrc(const char* data);
 
+extern "C" uint32_t asm_calc_crc32(const char* str);
+
 #endif //< #ifndef CRC_H_

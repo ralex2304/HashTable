@@ -6,6 +6,11 @@
 //#define HASHES_TEST
 #define PERF_TEST
 
+#define CRC_OPTIMISATION
+
+#define STRCMP_OPTIMISATION
+
+
 #ifndef NDEBUG
 
 #define INCLUDE_LIST "ListDebug/ListDebug.h"
