@@ -98,11 +98,10 @@
 Целевое использование программы - поиск слов. Эту часть и будем оптимизировать.
 
 Начальные параметры:
-
 - хеш: `CRC32`
 - входные данные: `32 110` английских слов (`5 414` уникальных)
 - load factor: `7` (размер таблицы `773`)
-- данные для поиска: `10 000 000` случайных английских слов (половина из входных данных, половина из словаря)
+- данные для поиска: `10 000 000` случайных английских слов (половина из входных данных, половина из английского словаря)
 
 Для начала "оптимизируем" входные данные. Приведём их к виду, максимально быстрому для чтения, а также обеспечим выравнивание начал слов по 32 байтам (это нужно для `AVX` инструкций).
 
@@ -179,6 +178,12 @@ uint32_t strcrc_asm(const char* data) {
 }
 ```
 
+Ту же оптимизацию можно провести при помощи аналогичной функции, полностью написанной на ассемблере. Она представлена в файле [asm_crc.nasm](src/hash/asm_crc.nasm). Разницы во времени исполнения нет, так как компилятор генерирует почти такой же код:
+
+![crc asm comparison](img/asm_crc_compare.png)
+
+Однако первый вариант предпочтительнее, так как его легче сопровождать, а так же нет необходимости ассемблировать и линковать отдельный файл.
+
 ### 4. `crc + cmp` - предыдущее + оптимизация сравнения строк
 
 Целью работы является максимальная оптимизация программы. В промышленной задаче можно было бы остановиться на пердыдущем шаге, так как дальнейшие улучшения опираются на частный случай и достаточно сильно ухудшают совместимость и читаемость кода.
@@ -188,8 +193,7 @@ uint32_t strcrc_asm(const char* data) {
     1. `_mm256_load_si256(__m256i a)` - загрузить слова в расширенный регистр (выравнивание обеспечено входными данными).
     2. `_mm256_cmpeq_epi8(__m256i a, __m256i b)` - сравнить буквы.
     3. `_mm256_movemask_epi8(__m256i a)` - создать маску из результата сравнения.
-    4. `(~mask << (31 - elem.key_len))` - инвертировать биты маски и битовым сдвигом отбросить лишние биты.
-    5. Если полученный результат равен 0, то слова совпали.
+    4. Если все биты в маске `1`, то слова совпали.
 - Такая реализация быстрее стандартной, так как выполнена для частного случая. Стандартная библиотека языка `C` всё-таки обязана быть универсальной.
 
 ```
@@ -211,7 +215,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
 
         unsigned int mask = (unsigned int)_mm256_movemask_epi8(cmp);
 
-        if ((~mask << (31 - elem.key_len)) == 0)
+        if (mask == (uint32_t)-1) [[likely]]
             return &list->arr[list_node].elem;
     }
 
@@ -219,7 +223,10 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
 }
 ```
 
+Атрибут `[[likely]]` незначительно улучшил производительность (менее 0.01%), однако его использование всё же желательно в таких случаях.
+
 ## Итоговые измерения
+
 <table>
     <thead>
         <tr>
@@ -228,10 +235,10 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
             <th colspan=3 style="text-align: center">Функция поиска</th>
         </tr>
         <tr>
-            <th style="text-align: center">Ir * 10^6</th>
+            <th style="text-align: center">Ir * 10^3</th>
             <th style="text-align: center">% от base</th>
             <th style="text-align: center">% от предыдущего</th>
-            <th style="text-align: center">Ir * 10^6</th>
+            <th style="text-align: center">Ir * 10^3</th>
             <th style="text-align: center">% от base</th>
             <th style="text-align: center">% от предыдущего</th>
         </tr>
@@ -239,40 +246,36 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
     <tbody>
         <tr>
             <td>debug</td>
-            <td style="text-align: center">4 179</td>
-            <td style="text-align: center">228%</td>
+            <td style="text-align: center">4&nbsp;181&nbsp;831</td>
+            <td style="text-align: center">229%</td>
             <td style="text-align: center"></td>
-            <td style="text-align: center">4 004</td>
-            <td style="text-align: center">233%</td>
+            <td style="text-align: center">4&nbsp;004&nbsp;095</td>
+            <td style="text-align: center">234%</td>
             <td style="text-align: center"></td>
-        </tr>
         <tr>
             <td>base</td>
-            <td style="text-align: center">1 833</td>
+            <td style="text-align: center">1&nbsp;822&nbsp;696</td>
             <td style="text-align: center">100%</td>
             <td style="text-align: center">44%</td>
-            <td style="text-align: center">1 721</td>
+            <td style="text-align: center">1&nbsp;710&nbsp;960</td>
             <td style="text-align: center">100%</td>
             <td style="text-align: center">43%</td>
-        </tr>
         <tr>
             <td>crc</td>
-            <td style="text-align: center">1 265</td>
+            <td style="text-align: center">1&nbsp;254&nbsp;767</td>
             <td style="text-align: center">69%</td>
             <td style="text-align: center">69%</td>
-            <td style="text-align: center">1 153</td>
+            <td style="text-align: center">1&nbsp;143&nbsp;021</td>
             <td style="text-align: center">67%</td>
             <td style="text-align: center">67%</td>
-        </tr>
         <tr>
             <td>crc + cmp</td>
-            <td style="text-align: center">1 076</td>
-            <td style="text-align: center">59%</td>
-            <td style="text-align: center">85%</td>
-            <td style="text-align: center">964</td>
-            <td style="text-align: center">56%</td>
-            <td style="text-align: center">84%</td>
-        </tr>
+            <td style="text-align: center">1&nbsp;040&nbsp;748</td>
+            <td style="text-align: center">57%</td>
+            <td style="text-align: center">83%</td>
+            <td style="text-align: center">929&nbsp;001</td>
+            <td style="text-align: center">54%</td>
+            <td style="text-align: center">81%</td>
     </tbody>
 </table>
 
@@ -284,7 +287,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
 
 ## Вывод
 
-Видим, что практически всё время программы теперь занимают линейный поиск по спискам и подсчёт хешей. Обе операции мы уже оптимизировали. Остальные функции выполняются на несколько порядков быстрее и оптимизировать их не имеет смысла.
+Видим, что практически всё время программы теперь занимают линейный поиск по спискам и подсчёт хешей. Обе операции мы уже оптимизировали. Остальные функции выполняются на несколько порядков быстрее, и оптимизировать их не имеет смысла.
 
 # Источники и инструменты
 

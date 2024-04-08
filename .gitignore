@@ -12,4 +12,3 @@ vgcore.*
 /perf.data
 /callgrind.out.*
 /test/test_input/*bin.txt
-/readme_helper.ipynb
