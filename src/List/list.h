@@ -18,6 +18,8 @@ struct HashTableItem {
 
     Key_t key = nullptr;
 
+    size_t key_len = 0;
+
     Val_t val = 0;
 
     Hash_t hash = 0;

@@ -14,7 +14,7 @@ CFLAGS_SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-over
 				   object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,$\
 				   undefined,unreachable,vla-bound,vptr
 
-OPTIMISATION = $(if $(NDEBUG),-O2 -DNDEBUG, -O0) -march=native $(OPTION_FLAGS)
+OPTIMISATION = $(if $(NDEBUG),-O2 -DNDEBUG, -O0) -march=native $(OPTION_FLAGS) -masm=intel
 
 EXTERNAL_DIR =
 LIB_DIR =

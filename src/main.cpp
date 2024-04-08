@@ -26,24 +26,21 @@ static Status::Statuses perf_test_(char* words);
 
 int main() {
 
-    char* words = nullptr;
+    MappedFile words = {};
 
-    long size = 0;
-    STATUS_CHECK_RAISE(file_open_read_close("test/test_input/words.txt", &words, &size, 1 + 32),
-                                                                                         // 32 for AVX
-                                                                                    FREE(words));
+    STATUS_CHECK_RAISE(words.open_and_map("test/test_input/words_bin.txt"),     words.unmap_and_close());
 
 #ifdef HASHES_TEST
-    STATUS_CHECK_RAISE(hashes_test_(words),                                         FREE(words));
+    STATUS_CHECK_RAISE(hashes_test_(words.buf),                                 words.unmap_and_close());
 #endif
 
 #ifdef PERF_TEST
-    STATUS_CHECK_RAISE(perf_test_(words),                                           FREE(words));
+    STATUS_CHECK_RAISE(perf_test_(words.buf),                                   words.unmap_and_close());
 #endif
 
-    FREE(words);
+    words.unmap_and_close();
 
-    return 0;
+    return Status::OK_EXIT;
 }
 
 inline static bool insert_word_(HashTable* table, Key_t word) {
@@ -53,7 +50,7 @@ inline static bool insert_word_(HashTable* table, Key_t word) {
 
     if (elem == nullptr) {
 
-        if (table->insert(word, strlen(word)) != List::OK)
+        if (table->insert(word, 1) != List::OK)
             return false;
 
     }
@@ -78,9 +75,7 @@ static Status::Statuses hashes_test_(char* words) {
     tables[7].ctor(TABLE_SIZE, hash_rol);
     tables[8].ctor(TABLE_SIZE, strcrc);
 
-    char* word = strtok(words, "\n");
-
-    while (word != nullptr && *word != '\0') {
+    for (char* word = words; *word != '\0'; word += AVX_BLOCK_SIZE) {
 
         for (size_t i = 0; i < HASHES_TEST_NUM; i++) {
 
@@ -91,8 +86,6 @@ static Status::Statuses hashes_test_(char* words) {
                 return Status::LIST_ERROR;
             }
         }
-
-        word = strtok(nullptr, "\n");
     }
 
     Status::Statuses result = hashes_test_print_results_(tables);
@@ -122,28 +115,23 @@ static Status::Statuses hashes_test_print_results_(HashTable* tables) {
 static Status::Statuses perf_test_read_keys_and_search_(HashTable* table) {
     assert(table);
 
-    char* keys = nullptr;
+    MappedFile keys = {};
 
-    long size = 0;
-    STATUS_CHECK(file_open_read_close("test/test_input/keys.txt", &keys, &size, 1 + 32)); //< 32 for AVX
-
-    char* key = strtok(keys, "\n");
+    STATUS_CHECK(keys.open_and_map("test/test_input/keys_bin.txt"));
 
     size_t found = 0;
 
-    while (key != nullptr && *key != '\0') {
+    for (char* key = keys.buf; *key != '\0'; key += AVX_BLOCK_SIZE) {
 
         Elem_t* elem = table->get_elem_by_key(key);
 
         if (elem != nullptr)
             found++;
-
-        key = strtok(nullptr, "\n");
     }
 
     printf("%zu\n", found);
 
-    FREE(keys);
+    STATUS_CHECK(keys.unmap_and_close());
 
     return Status::NORMAL_WORK;
 }
@@ -154,20 +142,13 @@ static Status::Statuses perf_test_(char* words) {
     if (!table.ctor(TABLE_SIZE))
         return Status::MEMORY_EXCEED;
 
-    char* word = strtok(words, "\n");
+    for (char* word = words; *word != '\0'; word += AVX_BLOCK_SIZE) {
 
-    while (word != nullptr && *word != '\0') {
+        if (!insert_word_(&table, word)) {
 
-        for (size_t i = 0; i < HASHES_TEST_NUM; i++) {
-
-            if (!insert_word_(&table, word)) {
-
-                table.dtor();
-                return Status::LIST_ERROR;
-            }
+            table.dtor();
+            return Status::LIST_ERROR;
         }
-
-        word = strtok(nullptr, "\n");
     }
 
     Status::Statuses result = perf_test_read_keys_and_search_(&table);

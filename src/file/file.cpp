@@ -54,6 +54,59 @@ Status::Statuses file_open_write_bytes_close(const char* filename, char* buf, co
     return Status::NORMAL_WORK;
 }
 
+Status::Statuses MappedFile::open_and_map(const char* filename) {
+    assert(filename);
+    assert(buf == nullptr);
+    assert(fd == 0);
+
+    if ((fd = open (filename, O_RDONLY)) < 0) {
+        perror("Error opening file");
+        return Status::FILE_ERROR;
+    }
+
+    if ((len = get_len_()) <= 0)
+        return Status::FILE_ERROR;
+
+    if ((buf = (char*)mmap (0, len, PROT_READ, MAP_SHARED, fd, 0)) == (char*)-1) {
+        perror("Error mapping file");
+        return Status::FILE_ERROR;
+    }
+
+    return Status::NORMAL_WORK;
+};
+
+Status::Statuses MappedFile::unmap_and_close() {
+    assert(buf);
+    assert(fd != 0);
+
+    if (munmap(buf, len) != 0) {
+        perror("File unmapping error");
+        return Status::FILE_ERROR;
+    }
+
+    if (close(fd) != 0) {
+        perror("File close error");
+        return Status::FILE_ERROR;
+    }
+
+    return Status::NORMAL_WORK;
+};
+
+long MappedFile::get_len_() {
+    assert(fd);
+
+    long file_len = -1;
+
+    if (((file_len = lseek(fd, 0, SEEK_END)) <= 0) ||
+        lseek(fd, 0, SEEK_SET) != 0) {
+
+        perror("File len detection error");
+        return -1;
+    }
+
+    return file_len;
+}
+
 bool file_write_bytes(FILE* file, const void* data, size_t len) {
     assert(file);
     assert(data);

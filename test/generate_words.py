@@ -1,7 +1,9 @@
+BLOCK_SIZE = 32
 
 texts = ["test_input/hamlet.txt"]
 
-words = ""
+words_file     = open("test_input/words.txt", "w")
+words_file_bin = open("test_input/words_bin.txt", "w")
 
 words_set = set()
 
@@ -22,13 +24,12 @@ for text in texts:
 
             words_set.add(word)
 
-            words += word + "\n"
+            words_file.write(word + "\n")
+            words_file_bin.write(word + "\0" * (BLOCK_SIZE - len(word)))
             word = ""
 
-file = open("test_input/words.txt", "w")
 
-file.write(words)
-
-file.close()
+words_file.close()
+words_file_bin.close()
 
 print(len(words_set))

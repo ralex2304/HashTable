@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+const size_t AVX_BLOCK_SIZE = 32;
+
 //#define HASHES_TEST
 #define PERF_TEST
 
@@ -10,6 +12,7 @@
 
 #define STRCMP_OPTIMISATION
 
+//#define CRC_LINKED
 
 #ifndef NDEBUG
 

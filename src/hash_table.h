@@ -36,7 +36,7 @@ struct HashTable {
         };
 
         inline int insert(Key_t key, Val_t val) {
-            Elem_t elem = {.key = key, .val = val, .hash = calc_hash(key)};
+            Elem_t elem = {.key = key, .key_len = strlen(key), .val = val, .hash = calc_hash(key)};
             return insert_elem(elem);
         };
 
@@ -48,7 +48,13 @@ struct HashTable {
 #ifndef CRC_OPTIMISATION
         inline Hash_t calc_hash(Key_t key) { return strcrc(key); };
 #else //< #ifdef CRC_OPTIMISATION
+
+#ifdef CRC_LINKED
         inline Hash_t calc_hash(Key_t key) { return asm_calc_crc32(key); };
+#else //< #ifndef CRC_LINKED
+        inline Hash_t calc_hash(Key_t key) { return strcrc_asm(key); };
+#endif //<#ifdef CRC_LINKED
+
 #endif //< #ifndef CRC_OPTIMISATION
 
 #endif //< #ifdef PERF_TEST

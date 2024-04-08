@@ -5,8 +5,26 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "../utils/statuses.h"
+
+struct MappedFile {
+    public:
+
+        char* buf = nullptr;
+        int fd = 0;
+        size_t len = 0;
+
+        Status::Statuses open_and_map(const char* filename);
+
+        Status::Statuses unmap_and_close();
+
+    private:
+        long get_len_();
+};
 
 /**
  * @brief Opens files, reads and closes it

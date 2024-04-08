@@ -54,7 +54,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
     for (size_t list_node = list_head(list); list_node > 0; list_node = list->arr[list_node].next) {
         Elem_t elem = list->arr[list_node].elem;
 
-        if (elem.hash == hash && strncmp(key, elem.key, elem.val) == 0)
+        if (elem.hash == hash && strncmp(key, elem.key, elem.key_len) == 0)
             return &list->arr[list_node].elem;
     }
 
@@ -68,7 +68,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
 
     List* list = table_ + (hash % table_size_);
 
-    const __m256i key_vector = _mm256_loadu_si256((const __m256i*)key);
+    const __m256i key_vector = _mm256_load_si256((const __m256i*)key);
 
     for (size_t list_node = list_head(list); list_node > 0; list_node = list->arr[list_node].next) {
         Elem_t elem = list->arr[list_node].elem;
@@ -76,11 +76,13 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
         if (elem.hash != hash)
             continue;
 
-        const __m256i elem_key_vector = _mm256_loadu_si256((const __m256i*)elem.key);
+        const __m256i elem_key_vector = _mm256_load_si256((const __m256i*)elem.key);
 
         __m256i cmp = _mm256_cmpeq_epi8(key_vector, elem_key_vector);
 
-        if ((~(unsigned int)(_mm256_movemask_epi8(cmp)) << (31 - elem.val)) == 0)
+        unsigned int mask = (unsigned int)_mm256_movemask_epi8(cmp);
+
+        if ((~mask << (31 - elem.key_len)) == 0)
             return &list->arr[list_node].elem;
     }
 
