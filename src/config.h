@@ -8,9 +8,9 @@ const size_t AVX_BLOCK_SIZE = 32;
 //#define HASHES_TEST
 #define PERF_TEST
 
-#define CRC_OPTIMISATION
+//#define CRC_OPTIMISATION
 
-#define STRCMP_OPTIMISATION
+//#define STRCMP_OPTIMISATION
 
 //#define CRC_LINKED
 
@@ -36,7 +36,7 @@ const size_t AVX_BLOCK_SIZE = 32;
 // |      10     |    541     |
 const size_t TABLE_SIZE = 773;
 
-static const size_t HASHES_TEST_NUM = 9;
+static const size_t HASHES_TEST_NUM = 15;
 
 const size_t LIST_DEFAULT_CAPACITY = 8;
 

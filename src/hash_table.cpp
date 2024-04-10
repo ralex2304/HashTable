@@ -54,7 +54,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
     for (size_t list_node = list_head(list); list_node > 0; list_node = list->arr[list_node].next) {
         Elem_t elem = list->arr[list_node].elem;
 
-        if (elem.hash == hash && strncmp(key, elem.key, elem.key_len) == 0) [[likely]]
+        if (elem.hash == hash && strncmp(key, elem.key, elem.key_len + 1) == 0) [[likely]]
             return &list->arr[list_node].elem;
     }
 

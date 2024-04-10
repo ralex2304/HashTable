@@ -21,5 +21,15 @@ Hash_t hash_ror(const char* str);
 
 Hash_t hash_rol(const char* str);
 
+Hash_t hash_pjw32(const char* str);
 
+Hash_t hash_jenkins(const char* str);
+
+Hash_t hash_fnv(const char* str);
+
+Hash_t hash_sedgewick(const char* str);
+
+Hash_t hash_murmur2A(const char* str);
+
+Hash_t hash_murmur3(const char* str);
 #endif //< #ifndef HASH_H_

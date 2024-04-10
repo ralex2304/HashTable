@@ -63,17 +63,16 @@ inline static bool insert_word_(HashTable* table, Key_t word) {
 static Status::Statuses hashes_test_(char* words) {
     assert(words);
 
+    Hash_t (*hash_funcs[HASHES_TEST_NUM])(Key_t) = {
+        hash_always_zero, hash_first_letter, hash_len, hash_sum, hash_sum, hash_sum_div_len,
+        hash_ror, hash_rol, strcrc, hash_pjw32, hash_jenkins, hash_fnv, hash_sedgewick,
+        hash_murmur2A, hash_murmur3
+    };
+
     HashTable tables[HASHES_TEST_NUM] = {};
 
-    tables[0].ctor(TABLE_SIZE, hash_always_zero);
-    tables[1].ctor(TABLE_SIZE, hash_first_letter);
-    tables[2].ctor(TABLE_SIZE, hash_len);
-    tables[3].ctor(TABLE_SIZE, hash_sum);
-    tables[4].ctor(100,        hash_sum);
-    tables[5].ctor(TABLE_SIZE, hash_sum_div_len);
-    tables[6].ctor(TABLE_SIZE, hash_ror);
-    tables[7].ctor(TABLE_SIZE, hash_rol);
-    tables[8].ctor(TABLE_SIZE, strcrc);
+    for (size_t i = 0; i < HASHES_TEST_NUM; i++)
+        tables[i].ctor(i == 4 ? 100 : TABLE_SIZE, hash_funcs[i]);
 
     for (char* word = words; *word != '\0'; word += AVX_BLOCK_SIZE) {
 

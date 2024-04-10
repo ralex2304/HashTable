@@ -45,7 +45,13 @@
 6. Сумма ASCII кодов символов
 7. Для пустого слова 0. Далее в цикле по всему слову: `hash = ror(hash, 1) xor word[i]`, где `ror` - циклический битовый сдвиг вправо на один бит
 8. То же, что и предыдущее, но `rol` - циклический битовый сдвиг влево на один бит
-9. `CRC32`
+9. [`CRC32`](https://ru.wikipedia.org/wiki/Crc) - циклический избыточный код
+10. [`PJW-32`](https://ru.wikipedia.org/wiki/PJW-32) - хеш-функция, разработанная Питером Вэйнбергером (Peter J. Weinberger) из AT&T Bell Laboratories.
+11. [`Jenkins one-at-a-time`](https://en.wikipedia.org/wiki/Jenkins_hash_function) - 32 битная хеш-функция общего назначения, разработанная Бобом Дженкинсом.
+12. [`FNV`](https://ru.wikipedia.org/wiki/FNV) - простая хеш-функция для общего применения, разработанная Гленом Фаулером, Лондоном Керт Нолом и Фогном Во.
+13. [`Robert Sedgewick`](https://guildalfa.ru/alsha/node/32) - простейшая строковая 32-битная хеш-функция. Содержит всего два умножения и одно сложение. Имеет мало коллизий для английских слов
+14. [`MurmurHash2A`](https://ru.wikipedia.org/wiki/MurmurHash2) - простая и быстрая хеш-функция общего назначения, разработанная Остином Эпплби.
+15. [`MurmurHash3`](https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp) - улучшеная версия `MurmurHash2`
 
 Ниже представлены гистограммы для всех вариантов хеш-функций.
 
@@ -64,6 +70,12 @@
 
 <img src="img/hist7.png" width="45%"> <img src="img/hist8.png" width="45%">
 
+<img src="img/hist9.png" width="45%"> <img src="img/hist10.png" width="45%">
+
+<img src="img/hist11.png" width="45%"> <img src="img/hist12.png" width="45%">
+
+<img src="img/hist13.png" width="45%"> <img src="img/hist14.png" width="45%">
+
 Ниже представлены параметры распределений. В данном случае математическое ожидание совпадает с load factor. Результат тем лучше, чем меньше дисперсия, так как она определяет среднюю длину списка, а значит и время линейного поиска.
 
 | # | Хэш | Размер табл. | Мат. ожидание | Дисперсия |
@@ -76,12 +88,19 @@
 | 6 | `sum(word[i])` | 773 | 7.0 | 35.5 |
 | 7 | `ror() xor word[i]` | 773 | 7.0 | 38.2 |
 | 8 | `rol() xor word[i]` | 773 | 7.0 | 20.1 |
-| 9 | `CRC32` | 773 | 7.0 | 6.8 |
+| 9 | `crc32` | 773 | 7.0 | 6.8 |
+| 10 | `pjw32` | 773 | 7.0 | 6.5 |
+| 11 | `jenkins` | 773 | 7.0 | 7.2 |
+| 12 | `fnv` | 773 | 7.0 | 6.8 |
+| 13 | `sedgewick` | 773 | 7.0 | 7.0 |
+| 14 | `murmur2A` | 773 | 7.0 | 2804.0 |
+| 15 | `murmur3` | 773 | 7.0 | 2807.7 |
 
-- Как видим наилучший результат ожидаемо показала функция `CRC32`.
+- Наилучшие результаты показали `pjw32`, `crc32` и `fnv`. В дальнейшем будем использовать `CRC32`, так как её легко оптимизировать при помощи ассемблерной инструкции.
 - Плохой результат хешей 1-4 объясняется тем, что разброс их значений слишком мал.
 - Сумма кодов символов для таблицы размером `773` слишком периодична. Это объясняется тем, что ASCII коды маленьких английских букв лежат в диапазоне от `97` до `122`. Но этот диапазон сравним с размером таблицы `100`, поэтому периодичность уже не заметна.
 - На гистограмме для циклического сдвига вправо виден ярко выраженный пик. Сдвиг влево показал себя лучше.
+- Неожиданно плохой результат у обоих `murmur`. Дело в том, что они не приспособлены для очень коротких строк. Результат слишком часто сбрасывается в 0.
 
 ### Замечание о циклических сдвигах
 
@@ -227,6 +246,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
 
 ## Итоговые измерения
 
+
 <table>
     <thead>
         <tr>
@@ -246,32 +266,32 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
     <tbody>
         <tr>
             <td>debug</td>
-            <td style="text-align: center">4&nbsp;181&nbsp;831</td>
-            <td style="text-align: center">229%</td>
+            <td style="text-align: center">4&nbsp;202&nbsp;499</td>
+            <td style="text-align: center">228%</td>
             <td style="text-align: center"></td>
-            <td style="text-align: center">4&nbsp;004&nbsp;095</td>
-            <td style="text-align: center">234%</td>
+            <td style="text-align: center">4&nbsp;027&nbsp;318</td>
+            <td style="text-align: center">232%</td>
             <td style="text-align: center"></td>
         <tr>
             <td>base</td>
-            <td style="text-align: center">1&nbsp;822&nbsp;696</td>
+            <td style="text-align: center">1&nbsp;846&nbsp;045</td>
             <td style="text-align: center">100%</td>
             <td style="text-align: center">44%</td>
-            <td style="text-align: center">1&nbsp;710&nbsp;960</td>
+            <td style="text-align: center">1&nbsp;734&nbsp;309</td>
             <td style="text-align: center">100%</td>
             <td style="text-align: center">43%</td>
         <tr>
             <td>crc</td>
             <td style="text-align: center">1&nbsp;254&nbsp;767</td>
-            <td style="text-align: center">69%</td>
-            <td style="text-align: center">69%</td>
+            <td style="text-align: center">68%</td>
+            <td style="text-align: center">68%</td>
             <td style="text-align: center">1&nbsp;143&nbsp;021</td>
-            <td style="text-align: center">67%</td>
-            <td style="text-align: center">67%</td>
+            <td style="text-align: center">66%</td>
+            <td style="text-align: center">66%</td>
         <tr>
             <td>crc + cmp</td>
             <td style="text-align: center">1&nbsp;040&nbsp;748</td>
-            <td style="text-align: center">57%</td>
+            <td style="text-align: center">56%</td>
             <td style="text-align: center">83%</td>
             <td style="text-align: center">929&nbsp;001</td>
             <td style="text-align: center">54%</td>
