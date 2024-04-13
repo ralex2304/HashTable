@@ -29,7 +29,7 @@ Hash_t hash_fnv(const char* str);
 
 Hash_t hash_sedgewick(const char* str);
 
-Hash_t hash_murmur2A(const char* str);
+Hash_t hash_murmur2A(const char* str, uint32_t len);
 
-Hash_t hash_murmur3(const char* str);
+Hash_t hash_murmur3(const char* str, const uint32_t len);
 #endif //< #ifndef HASH_H_

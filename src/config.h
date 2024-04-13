@@ -12,7 +12,7 @@ const size_t AVX_BLOCK_SIZE = 32;
 
 //#define STRCMP_OPTIMISATION
 
-//#define CRC_LINKED
+#define CRC_LINKED
 
 #ifndef NDEBUG
 
@@ -27,6 +27,7 @@ const size_t AVX_BLOCK_SIZE = 32;
 // words in words.txt: 5414
 // | load factor | table size |
 // |       1     |    5413    |
+// |      1.5    |    3607    |
 // |       2     |    2707    |
 // |       3     |    1801    |
 // |       4     |    1327    |
@@ -35,6 +36,8 @@ const size_t AVX_BLOCK_SIZE = 32;
 // |       9     |    601     |
 // |      10     |    541     |
 const size_t TABLE_SIZE = 773;
+
+const size_t PERF_TABLE_SIZE = 3607;
 
 static const size_t HASHES_TEST_NUM = 15;
 

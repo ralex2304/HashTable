@@ -97,14 +97,3 @@ uint32_t strcrc(const char* data) {
     return ~crc;
 }
 
-uint32_t strcrc_asm(const char* data) {
-    assert(data);
-
-    uint32_t hash = 0;
-
-    while (*data)
-        asm ("crc32 %0, %1\n" : "=r"(hash) : "r"(*data++), "r"(hash));
-
-    return hash;
-}
-

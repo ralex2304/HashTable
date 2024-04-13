@@ -110,15 +110,13 @@ Hash_t hash_sedgewick(const char* str) {
 
 #define mmix(h,k) { k *= m; k ^= k >> r; k *= m; h *= m; h ^= k; }
 
-Hash_t hash_murmur2A(const char* str) {
+Hash_t hash_murmur2A(const char* str, uint32_t len) {
 	const Hash_t m = 0x5bd1e995;
     Hash_t seed = 0;
 	const int r = 24;
 
 	Hash_t h = seed;
     Hash_t k = 0;
-
-    uint32_t len = (uint32_t)strlen(str);
 
 	while (len >= 4) {
 		k = *(const unsigned int*)str;
@@ -138,7 +136,7 @@ Hash_t hash_murmur2A(const char* str) {
                 break;
 
         default:
-            return 0;
+            break;
 	};
 
 	mmix(h, t);
@@ -152,8 +150,7 @@ Hash_t hash_murmur2A(const char* str) {
 }
 #undef mmix
 
-Hash_t hash_murmur3(const char* str) {
-    const uint32_t len = (uint32_t)strlen(str);
+Hash_t hash_murmur3(const char* str, const uint32_t len) {
 
     const uint32_t nblocks = len / 4;
 
@@ -196,7 +193,7 @@ Hash_t hash_murmur3(const char* str) {
                 break;
 
         default:
-            return 0;
+            break;
     };
 
     //----------

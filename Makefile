@@ -14,7 +14,7 @@ CFLAGS_SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-over
 				   object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,$\
 				   undefined,unreachable,vla-bound,vptr
 
-OPTIMISATION = $(if $(NDEBUG),-O2 -DNDEBUG, -O0) -march=native $(OPTION_FLAGS) -masm=intel
+OPTIMISATION = $(if $(NDEBUG),-O2 -DNDEBUG, -O0) -march=native $(OPTION_FLAGS) -masm=intel -g
 
 EXTERNAL_DIR =
 LIB_DIR =
@@ -64,12 +64,40 @@ $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR) $(MAKE_DIRS)
 	@$(CC) $(OPTIMISATION) $(IFLAGS) $(CFLAGS) $(if $(sanitizer), $(CFLAGS_SANITIZER)) -MMD -MP -c $< -o $@
 
 $(BUILD_DIR)/%.o: %.nasm | $(BUILD_DIR) $(MAKE_DIRS)
-	@nasm -f elf64 $< -o $@
+	@nasm -g -f elf64 $< -o $@
 
-.PHONY: callgrind
+.PHONY: callgrind perf_build perf_test
 
 callgrind:
-	valgrind --dump-instr=yes --collect-jumps=yes --tool=callgrind $(prog)
+	valgrind --dump-instr=yes --collect-jumps=yes --tool=callgrind --callgrind-out-file=test/callgrind/$(prog)/callgrind.out.main_$(prog)$(prog_n) ./main_$(prog)
+
+perf_build:
+	@make clean
+	@make OPTION_FLAGS="" OPTION_NAME=main_debug
+	@make clean
+	@make NDEBUG=1 OPTION_FLAGS="" OPTION_NAME=main_base
+	@make clean
+	@make NDEBUG=1 OPTION_FLAGS="-DCRC_OPTIMISATION" OPTION_NAME=main_crc_only
+	@make clean
+	@make NDEBUG=1 OPTION_FLAGS="-DCRC_OPTIMISATION -DSTRCMP_OPTIMISATION" OPTION_NAME=main_crc_cmp
+	@make clean
+
+perf_test:
+#	@make callgrind prog=debug prog_n=1
+#	@make callgrind prog=debug prog_n=2
+#	@make callgrind prog=debug prog_n=3
+#
+#	@make callgrind prog=base prog_n=1
+#	@make callgrind prog=base prog_n=2
+#	@make callgrind prog=base prog_n=3
+
+	@make callgrind prog=crc_only prog_n=1
+	@make callgrind prog=crc_only prog_n=2
+	@make callgrind prog=crc_only prog_n=3
+
+	@make callgrind prog=crc_cmp prog_n=1
+	@make callgrind prog=crc_cmp prog_n=2
+	@make callgrind prog=crc_cmp prog_n=3
 
 clean:
 	@rm -rf ./$(BUILD_DIR)/*

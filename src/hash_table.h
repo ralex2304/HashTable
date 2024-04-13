@@ -46,13 +46,13 @@ struct HashTable {
 #ifdef PERF_TEST
 
 #ifndef CRC_OPTIMISATION
-        inline Hash_t calc_hash(Key_t key) { return strcrc(key); };
+        inline Hash_t calc_hash(Key_t key) { return hash_murmur3(key, (uint32_t)strlen(key)); };
 #else //< #ifdef CRC_OPTIMISATION
 
 #ifdef CRC_LINKED
-        inline Hash_t calc_hash(Key_t key) { return asm_calc_crc32(key); };
+        inline Hash_t calc_hash(Key_t key) { return asm_calc_crc32_8(key, AVX_BLOCK_SIZE); };
 #else //< #ifndef CRC_LINKED
-        inline Hash_t calc_hash(Key_t key) { return strcrc_asm(key); };
+        inline Hash_t calc_hash(Key_t key) { return strcrc_asm_8(key, AVX_BLOCK_SIZE); };
 #endif //<#ifdef CRC_LINKED
 
 #endif //< #ifndef CRC_OPTIMISATION

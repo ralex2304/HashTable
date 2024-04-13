@@ -138,7 +138,7 @@ static Status::Statuses perf_test_read_keys_and_search_(HashTable* table) {
 static Status::Statuses perf_test_(char* words) {
 
     HashTable table = {};
-    if (!table.ctor(TABLE_SIZE))
+    if (!table.ctor(PERF_TABLE_SIZE))
         return Status::MEMORY_EXCEED;
 
     for (char* word = words; *word != '\0'; word += AVX_BLOCK_SIZE) {
