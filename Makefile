@@ -7,7 +7,7 @@ CFLAGS = -fdiagnostics-color=always -Wshadow -Winit-self -Wredundant-decls -Wcas
 		 -Wconversion -Wctor-dtor-privacy -Wempty-body -Wformat-security -Wformat=2 -Wignored-qualifiers \
 		 -Wlogical-op -Wno-missing-field-initializers -Wnon-virtual-dtor -Woverloaded-virtual 			 \
 		 -Wpointer-arith -Wsign-promo -Wstack-usage=8192 -Wstrict-aliasing -Wstrict-null-sentinel 		 \
-		 -Wtype-limits -Wwrite-strings -Werror=vla -D_DEBUG -D_EJUDGE_CLIENT_SIDE
+		 -Wtype-limits -Wwrite-strings -Werror=vla
 
 CFLAGS_SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,$\
 				   float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,$\
@@ -66,10 +66,14 @@ $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR) $(MAKE_DIRS)
 $(BUILD_DIR)/%.o: %.nasm | $(BUILD_DIR) $(MAKE_DIRS)
 	@nasm -g -f elf64 $< -o $@
 
-.PHONY: callgrind perf_build perf_test
+.PHONY: callgrind perf perf_build callgrind_test perf_test
 
 callgrind:
 	valgrind --dump-instr=yes --collect-jumps=yes --tool=callgrind --callgrind-out-file=test/callgrind/$(prog)/callgrind.out.main_$(prog)$(prog_n) ./main_$(prog)
+
+perf:
+	sudo perf record -o test/perf/$(prog)/main_$(prog)$(prog_n).data --call-graph dwarf ./main_$(prog)
+	chmod a=rwx test/perf/$(prog)/main_$(prog)$(prog_n).data
 
 perf_build:
 	@make clean
@@ -82,14 +86,14 @@ perf_build:
 	@make NDEBUG=1 OPTION_FLAGS="-DCRC_OPTIMISATION -DSTRCMP_OPTIMISATION" OPTION_NAME=main_crc_cmp
 	@make clean
 
-perf_test:
-#	@make callgrind prog=debug prog_n=1
-#	@make callgrind prog=debug prog_n=2
-#	@make callgrind prog=debug prog_n=3
-#
-#	@make callgrind prog=base prog_n=1
-#	@make callgrind prog=base prog_n=2
-#	@make callgrind prog=base prog_n=3
+callgrind_test:
+	@make callgrind prog=debug prog_n=1
+	@make callgrind prog=debug prog_n=2
+	@make callgrind prog=debug prog_n=3
+
+	@make callgrind prog=base prog_n=1
+	@make callgrind prog=base prog_n=2
+	@make callgrind prog=base prog_n=3
 
 	@make callgrind prog=crc_only prog_n=1
 	@make callgrind prog=crc_only prog_n=2
@@ -98,6 +102,23 @@ perf_test:
 	@make callgrind prog=crc_cmp prog_n=1
 	@make callgrind prog=crc_cmp prog_n=2
 	@make callgrind prog=crc_cmp prog_n=3
+
+perf_test:
+	@make perf prog=debug prog_n=1
+	@make perf prog=debug prog_n=2
+	@make perf prog=debug prog_n=3
+
+	@make perf prog=base prog_n=1
+	@make perf prog=base prog_n=2
+	@make perf prog=base prog_n=3
+
+	@make perf prog=crc_only prog_n=1
+	@make perf prog=crc_only prog_n=2
+	@make perf prog=crc_only prog_n=3
+
+	@make perf prog=crc_cmp prog_n=1
+	@make perf prog=crc_cmp prog_n=2
+	@make perf prog=crc_cmp prog_n=3
 
 clean:
 	@rm -rf ./$(BUILD_DIR)/*

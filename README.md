@@ -1,6 +1,22 @@
-![kcachegrind](img/kcachegrind_illustration.png)
+![kcachegrind](img/perf_illustration.png)
 
+# Содержание
 
+1. [Хеш таблица](#хеш-таблица)
+2. [Оптимизация хеш таблицы](#оптимизация-хеш-таблицы)
+    1. [Сравнение хеш-функций](#сравнение-хеш-функций)
+        1. [Замечание о циклических сдвигах](#замечание-о-циклических-сдвигах)
+    2. [Оптимизации](#оптимизации)
+    3. [Варианты программы:](#варианты-программы)
+        1. [1. `debug` - дебаг версия без оптимизаций](#1-debug---дебаг-версия-без-оптимизаций)
+        2. [2. `base` - базовая версия без оптимизаций](#2-base---базовая-версия-без-оптимизаций)
+        3. [3. `crc` - замена хеша на `CRC32` и ассемблерная оптимизация](#3-crc---замена-хеша-на-crc32-и-ассемблерная-оптимизация)
+        4. [4. `crc + cmp` - предыдущее + оптимизация сравнения строк](#4-crc--cmp---предыдущее--оптимизация-сравнения-строк)
+    4. [Итоговые измерения](#итоговые-измерения)
+    5. [Сравнение результатов `callgrind` и `perf`](#сравнение-результатов-callgrind-и-perf)
+    6. [Вывод](#вывод)
+3. [Источники и инструменты](#источники-и-инструменты)
+4. [Благодарности](#благодарности)
 
 # Хеш таблица
 
@@ -242,6 +258,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
             <td style="text-align: center">276%</td>
             <td style="text-align: center"></td>
         <tr>
+        </tr>
             <td>base</td>
             <td style="text-align: center">1&nbsp;303&nbsp;464</td>
             <td style="text-align: center">100%</td>
@@ -250,6 +267,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
             <td style="text-align: center">100%</td>
             <td style="text-align: center">36%</td>
         <tr>
+        </tr>
             <td>crc</td>
             <td style="text-align: center">864&nbsp;300</td>
             <td style="text-align: center">66%</td>
@@ -258,6 +276,7 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
             <td style="text-align: center">64%</td>
             <td style="text-align: center">64%</td>
         <tr>
+        </tr>
             <td>crc + cmp</td>
             <td style="text-align: center">626&nbsp;931</td>
             <td style="text-align: center">48%</td>
@@ -265,10 +284,11 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
             <td style="text-align: center">503&nbsp;490</td>
             <td style="text-align: center">44%</td>
             <td style="text-align: center">68%</td>
+        </tr>
     </tbody>
 </table>
 
-<img src="img/perf_bar_chart.png" width="50%">
+<img src="img/callgrind_bar_chart.png" width="49%">
 
 Случайные погрешности всех величин меньше `0.01%` (проводилось по 3 измерения).
 
@@ -284,18 +304,93 @@ Elem_t* HashTable::get_elem_by_key(Key_t key, Hash_t hash) {
 
 Самая значимая часть функции - накладные расходы.
 
+## Сравнение результатов `callgrind` и `perf`
+
+Провели измерения тех же вариантов программы при помощи `perf 6.7-2` (графический интерфейс `hotspot 1.4.80`).
+
+<table>
+    <thead>
+        <tr>
+            <th rowspan=2>Оптимизация</th>
+            <th colspan=3 style="text-align: center">Вся программа</th>
+            <th colspan=3 style="text-align: center">Функция поиска</th>
+        </tr>
+        <tr>
+            <th style="text-align: center">Cycles * 10^6</th>
+            <th style="text-align: center">% от base</th>
+            <th style="text-align: center">% от предыдущего</th>
+            <th style="text-align: center">Cycles * 10^6</th>
+            <th style="text-align: center">% от base</th>
+            <th style="text-align: center">% от предыдущего</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>debug</td>
+            <td style="text-align: center">4&nbsp;520 +- 40</td>
+            <td style="text-align: center">220%</td>
+            <td style="text-align: center"></td>
+            <td style="text-align: center">3&nbsp;650 +- 40</td>
+            <td style="text-align: center">193%</td>
+            <td style="text-align: center"></td>
+        </tr>
+        <tr>
+            <td>base</td>
+            <td style="text-align: center">2&nbsp;050 +- 50</td>
+            <td style="text-align: center">100%</td>
+            <td style="text-align: center">45%</td>
+            <td style="text-align: center">1&nbsp;900 +- 20</td>
+            <td style="text-align: center">100%</td>
+            <td style="text-align: center">52%</td>
+        </tr>
+        <tr>
+            <td>crc</td>
+            <td style="text-align: center">1&nbsp;526 +- 6</td>
+            <td style="text-align: center">74%</td>
+            <td style="text-align: center">74%</td>
+            <td style="text-align: center">1&nbsp;405 +- 12</td>
+            <td style="text-align: center">74%</td>
+            <td style="text-align: center">74%</td>
+        </tr>
+        <tr>
+            <td>crc + cmp</td>
+            <td style="text-align: center">1&nbsp;386 +- 4</td>
+            <td style="text-align: center">68%</td>
+            <td style="text-align: center">91%</td>
+            <td style="text-align: center">1&nbsp;259 +- 8</td>
+            <td style="text-align: center">66%</td>
+            <td style="text-align: center">90%</td>
+        </tr>
+    </tbody>
+</table>
+
+<img src="img/callgrind_bar_chart.png" width="49%"> <img src="img/perf_bar_chart.png" width="49%">
+
+Различие результатов объясняется тем, что `perf` измеряет затраченное количество тактов процессора, тогда как `callgrind` лишь считает количество выполненных инструкций и не учитывает ни задержки команд, ни работу конвейера, ни затраты при промахах кеша.
+
+В случае данной программы результаты не так сильно отличаются, и проведённые оптимизации всё так же оправданы.
+
+Так выглядит результат после всех оптимизаций:
+
+![perf crc_cmp](img/perf_crc_cmp.png)
+
+![perf crc_cmp disassembly](img/perf_crc_cmp_src.png)
+
 ## Вывод
 
 Видим, что практически всё время программы теперь занимают линейный поиск по спискам и подсчёт хешей. Обе операции мы уже оптимизировали. Остальные функции выполняются на несколько порядков быстрее, и оптимизировать их не имеет смысла.
+
+Также сравнили результаты `callgrind` и `perf`. Стоит иметь ввиду особенности работы обоих инструментов и подбирать подходящий вариант для измерений в будущем.
 
 # Источники и инструменты
 
 1. **Computer Systems: A Programmer's Perspective** 3rd Edition by **Randal Bryant**, **David O'Hallaron**
 2. **Compiler explorer** - [godbolt.com](https://godbolt.com)
 3. **Valgrind** - [valgrind.org](https://valgrind.org/docs/manual/index.html)
-4. **Mirror of Intel Intrinsics Guide** - [laurence.com/sse](https://www.laruence.com/sse/)
-5. **Jupyter Notebook** - [jupyter.org](https://jupyter.org/)
-6. **Python Matplotlib** - [matplotlib.org](https://matplotlib.org/)
+4. **Perf** - [perf.wiki.kernel.org](https://perf.wiki.kernel.org/index.php/Main_Page)
+5. **Mirror of Intel Intrinsics Guide** - [laurence.com/sse](https://www.laruence.com/sse/)
+6. **Jupyter Notebook** - [jupyter.org](https://jupyter.org/)
+7. **Python Matplotlib** - [matplotlib.org](https://matplotlib.org/)
 
 # Благодарности
 - [Ilya Dedinsky](https://github.com/ded32) aka Ded as prepod
